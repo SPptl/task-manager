@@ -95,4 +95,22 @@ router.post("/create", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/:projectId", authMiddleware, async (req, res) => {
+  try {
+    const project = await Project.findById(req.params.projectId);
+
+    if (!project) {
+      return res.status(404).json({
+        message: "Project not found",
+      });
+    }
+
+    res.json(project);
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+    });
+  }
+});
+
 module.exports = router;
