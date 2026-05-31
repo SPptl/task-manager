@@ -28,7 +28,7 @@ function ProjectPage() {
   const fetchProjectName = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:5000/api/projects/${projectId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects/${projectId}`, {
         headers: {
           Authorization: token,
         },
@@ -45,7 +45,7 @@ function ProjectPage() {
     setFeedback("");
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`http://localhost:5000/api/tasks/project/${projectId}`, {
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/project/${projectId}`, {
         headers: {
           Authorization: token,
         },
@@ -74,7 +74,7 @@ function ProjectPage() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        "http://localhost:5000/api/tasks/create",
+        `${import.meta.env.VITE_API_URL}/api/tasks/create`,
         {
           ...taskData,
           project: projectId,
@@ -100,7 +100,7 @@ function ProjectPage() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `http://localhost:5000/api/tasks/update-status/${taskId}`,
+        `${import.meta.env.VITE_API_URL}/api/tasks/update-status/${taskId}`,
         { status },
         {
           headers: {

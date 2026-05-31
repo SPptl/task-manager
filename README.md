@@ -143,7 +143,7 @@ npm install
 Create `.env` file inside frontend:
 
 ```env
-VITE_API_URL=http://localhost:5000
+VITE_API_URL=${import.meta.env.VITE_API_URL}
 ```
 
 Run frontend:
