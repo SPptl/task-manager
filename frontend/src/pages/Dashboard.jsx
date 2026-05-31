@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import ProjectCard from "../components/ProjectCard";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [projectData, setProjectData] = useState({
@@ -20,7 +22,7 @@ function Dashboard() {
     setLoadingProjects(true);
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://localhost:5000/api/projects/my-projects", {
+      const response = await axios.get(`${API_BASE}/api/projects/my-projects`, {
         headers: {
           Authorization: token,
         },
@@ -48,7 +50,7 @@ function Dashboard() {
 
     try {
       const token = localStorage.getItem("token");
-      await axios.post("http://localhost:5000/api/projects/create", projectData, {
+      await axios.post(`${API_BASE}/api/projects/create`, projectData, {
         headers: {
           Authorization: token,
         },
