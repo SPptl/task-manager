@@ -4,6 +4,8 @@ import axios from "axios";
 import TaskCard from "../components/TaskCard";
 import LoadingSpinner from "../components/LoadingSpinner";
 
+const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 function ProjectPage() {
   const { projectId } = useParams();
   const location = useLocation();
@@ -28,7 +30,7 @@ function ProjectPage() {
   const fetchProjectName = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/projects/${projectId}`, {
+      const response = await axios.get(`${API_BASE}/api/projects/${projectId}`, {
         headers: {
           Authorization: token,
         },
@@ -45,7 +47,7 @@ function ProjectPage() {
     setFeedback("");
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/tasks/project/${projectId}`, {
+      const response = await axios.get(`${API_BASE}/api/tasks/project/${projectId}`, {
         headers: {
           Authorization: token,
         },
@@ -74,7 +76,7 @@ function ProjectPage() {
     try {
       const token = localStorage.getItem("token");
       await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/tasks/create`,
+        `${API_BASE}/api/tasks/create`,
         {
           ...taskData,
           project: projectId,
@@ -100,7 +102,7 @@ function ProjectPage() {
     try {
       const token = localStorage.getItem("token");
       await axios.put(
-        `${import.meta.env.VITE_API_URL}/api/tasks/update-status/${taskId}`,
+        `${API_BASE}/api/tasks/update-status/${taskId}`,
         { status },
         {
           headers: {
