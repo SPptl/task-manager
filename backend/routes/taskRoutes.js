@@ -70,7 +70,9 @@ router.get("/project/:projectId", authMiddleware, async (req, res) => {
 
     const tasks = await Task.find({
       project: req.params.projectId,
-    });
+    })
+      .populate("assignedTo", "name email")
+      .populate("createdBy", "name email");
 
     res.json(tasks);
 

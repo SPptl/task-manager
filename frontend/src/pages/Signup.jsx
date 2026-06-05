@@ -32,7 +32,8 @@ function Signup() {
         formData
       );
 
-      console.log(response.data);
+      localStorage.setItem("token", response.data.token);
+      localStorage.setItem("user", JSON.stringify(response.data.user || {}));
       setFeedback("Signup successful. Redirecting to login...");
       setTimeout(() => navigate("/login"), 700);
     } catch (error) {

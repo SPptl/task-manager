@@ -1,6 +1,7 @@
 const express = require("express");
 
 const Project = require("../models/Project");
+const Task = require("../models/Task");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -74,6 +75,40 @@ router.get("/my-projects", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/dashboard-stats", authMiddleware, async (req, res) => {
+  try {
+    const projects = await Project.find({ members: req.user.id });
+    const projectIds = projects.map((project) => project._id);
+
+    const tasks = await Task.find({ project: { $in: projectIds } })
+      .populate("assignedTo", "name email")
+      .populate("project", "name");
+
+    const byStatus = { "To Do": 0, "In Progress": 0, Done: 0 };
+    const byUser = {};
+
+    tasks.forEach((task) => {
+      byStatus[task.status] = (byStatus[task.status] || 0) + 1;
+
+      const userName = task.assignedTo?.name || "Unassigned";
+      byUser[userName] = (byUser[userName] || 0) + 1;
+    });
+
+    const overdueTasks = tasks.filter((task) => {
+      return task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "Done";
+    }).length;
+
+    res.json({
+      totalTasks: tasks.length,
+      byStatus,
+      byUser,
+      overdueTasks,
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 
 router.post("/create", authMiddleware, async (req, res) => {
   try {
@@ -97,7 +132,9 @@ router.post("/create", authMiddleware, async (req, res) => {
 
 router.get("/:projectId", authMiddleware, async (req, res) => {
   try {
-    const project = await Project.findById(req.params.projectId);
+    const project = await Project.findById(req.params.projectId)
+      .populate("admin", "name email role")
+      .populate("members", "name email role");
 
     if (!project) {
       return res.status(404).json({
@@ -110,6 +147,33 @@ router.get("/:projectId", authMiddleware, async (req, res) => {
     res.status(500).json({
       message: error.message,
     });
+  }
+});
+
+router.put("/remove-member/:projectId", authMiddleware, async (req, res) => {
+  try {
+    const { memberId } = req.body;
+
+    const project = await Project.findById(req.params.projectId);
+
+    if (!project) {
+      return res.status(404).json({ message: "Project not found" });
+    }
+
+    if (project.admin.toString() !== req.user.id) {
+      return res.status(403).json({ message: "Only admin can remove members" });
+    }
+
+    if (memberId === project.admin.toString()) {
+      return res.status(400).json({ message: "Admin cannot be removed" });
+    }
+
+    project.members = project.members.filter((id) => id.toString() !== memberId);
+    await project.save();
+
+    res.json({ message: "Member removed successfully", project });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

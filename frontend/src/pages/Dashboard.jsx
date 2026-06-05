@@ -13,9 +13,11 @@ function Dashboard() {
   const [loadingProjects, setLoadingProjects] = useState(false);
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const [stats, setStats] = useState({ totalTasks: 0, byStatus: {}, byUser: {}, overdueTasks: 0 });
 
   useEffect(() => {
     fetchProjects();
+    fetchStats();
   }, []);
 
   const fetchProjects = async () => {
@@ -33,6 +35,18 @@ function Dashboard() {
       setFeedback("Unable to load projects. Please refresh or login again.");
     } finally {
       setLoadingProjects(false);
+    }
+  };
+
+  const fetchStats = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_BASE}/api/projects/dashboard-stats`, {
+        headers: { Authorization: token },
+      });
+      setStats(response.data);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -81,6 +95,31 @@ function Dashboard() {
             {projects.length} project{projects.length === 1 ? "" : "s"} found
           </div>
         </div>
+      </section>
+
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft">
+          <p className="text-sm text-slate-500">Total tasks</p>
+          <h3 className="mt-2 text-3xl font-semibold text-slate-900">{stats.totalTasks}</h3>
+        </article>
+        <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft">
+          <p className="text-sm text-slate-500">Overdue</p>
+          <h3 className="mt-2 text-3xl font-semibold text-rose-600">{stats.overdueTasks}</h3>
+        </article>
+        <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft md:col-span-2 xl:col-span-1">
+          <p className="text-sm text-slate-500">Status</p>
+          <p className="mt-2 text-sm text-slate-700">To Do: {stats.byStatus["To Do"] || 0}</p>
+          <p className="text-sm text-slate-700">In Progress: {stats.byStatus["In Progress"] || 0}</p>
+          <p className="text-sm text-slate-700">Done: {stats.byStatus.Done || 0}</p>
+        </article>
+        <article className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-soft md:col-span-2 xl:col-span-1">
+          <p className="text-sm text-slate-500">Tasks by user</p>
+          <div className="mt-2 space-y-1 text-sm text-slate-700">
+            {Object.entries(stats.byUser || {}).slice(0, 4).map(([name, count]) => (
+              <p key={name}>{name}: {count}</p>
+            ))}
+          </div>
+        </article>
       </section>
 
       <div className="grid gap-8 xl:grid-cols-[0.72fr_0.28fr]">

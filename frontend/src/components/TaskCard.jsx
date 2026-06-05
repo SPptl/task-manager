@@ -18,6 +18,16 @@ function TaskCard({ task, onStatusChange }) {
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
               {task.status}
             </span>
+            {task.dueDate && (
+              <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                Due {new Date(task.dueDate).toLocaleDateString()}
+              </span>
+            )}
+            {task.assignedTo?.name && (
+              <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-700">
+                Assigned to {task.assignedTo.name}
+              </span>
+            )}
           </div>
         </div>
         <div className="min-w-[180px] shrink-0">
@@ -27,9 +37,9 @@ function TaskCard({ task, onStatusChange }) {
             value={task.status}
             onChange={(e) => onStatusChange(task._id, e.target.value)}
           >
-            <option>To Do</option>
-            <option>In Progress</option>
-            <option>Done</option>
+            <option key="todo" value="To Do">To Do</option>
+            <option key="inprogress" value="In Progress">In Progress</option>
+            <option key="done" value="Done">Done</option>
           </select>
         </div>
       </div>

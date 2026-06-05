@@ -9,36 +9,38 @@ const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:5000";
 function ProjectPage() {
   const { projectId } = useParams();
   const location = useLocation();
+  const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
   const [projectName, setProjectName] = useState(location.state?.projectName || "Project");
+  const [projectDetails, setProjectDetails] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [taskData, setTaskData] = useState({
     title: "",
     description: "",
     priority: "Medium",
+    dueDate: "",
+    assignedTo: "",
   });
+  const [memberEmail, setMemberEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [feedback, setFeedback] = useState("");
 
   useEffect(() => {
-    if (!location.state?.projectName) {
-      fetchProjectName();
-    }
+    fetchProjectDetails();
     fetchTasks();
   }, [projectId]);
 
-  const fetchProjectName = async () => {
+  const fetchProjectDetails = async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get(`${API_BASE}/api/projects/${projectId}`, {
-        headers: {
-          Authorization: token,
-        },
+        headers: { Authorization: token },
       });
-      setProjectName(response.data.name);
+      setProjectName(response.data.name || "Project");
+      setProjectDetails(response.data);
     } catch (error) {
       console.log(error);
-      setFeedback("Unable to load project name.");
+      setFeedback("Unable to load project details.");
     }
   };
 
@@ -80,6 +82,8 @@ function ProjectPage() {
         {
           ...taskData,
           project: projectId,
+          dueDate: taskData.dueDate || undefined,
+          assignedTo: taskData.assignedTo || undefined,
         },
         {
           headers: {
@@ -87,7 +91,7 @@ function ProjectPage() {
           },
         }
       );
-      setTaskData({ title: "", description: "", priority: "Medium" });
+      setTaskData({ title: "", description: "", priority: "Medium", dueDate: "", assignedTo: "" });
       setFeedback("Task created successfully.");
       fetchTasks();
     } catch (error) {
@@ -95,6 +99,32 @@ function ProjectPage() {
       setFeedback("Could not create task. Try again.");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const addMember = async (e) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${API_BASE}/api/projects/add-member/${projectId}`, { email: memberEmail }, { headers: { Authorization: token } });
+      setMemberEmail("");
+      fetchProjectDetails();
+      setFeedback("Member added successfully.");
+    } catch (error) {
+      console.log(error);
+      setFeedback("Unable to add member. Check the email and try again.");
+    }
+  };
+
+  const removeMember = async (memberId) => {
+    try {
+      const token = localStorage.getItem("token");
+      await axios.put(`${API_BASE}/api/projects/remove-member/${projectId}`, { memberId }, { headers: { Authorization: token } });
+      fetchProjectDetails();
+      setFeedback("Member removed successfully.");
+    } catch (error) {
+      console.log(error);
+      setFeedback("Unable to remove member.");
     }
   };
 
@@ -125,7 +155,7 @@ function ProjectPage() {
             <p className="text-sm uppercase tracking-[0.3em] text-indigo-600">Project</p>
             <h1 className="mt-3 text-3xl font-semibold text-slate-900">{projectName}</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500">
-              Add tasks, assign priority, and update status from a polished project workspace.
+              Add tasks, assign due dates and members, and update status from a polished project workspace.
             </p>
           </div>
           <Link
@@ -166,6 +196,30 @@ function ProjectPage() {
                   className="mt-3 w-full rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                   placeholder="Describe the task"
                 />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Due date</label>
+                <input
+                  name="dueDate"
+                  type="date"
+                  value={taskData.dueDate}
+                  onChange={handleChange}
+                  className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700">Assign to</label>
+                <select
+                  name="assignedTo"
+                  value={taskData.assignedTo}
+                  onChange={handleChange}
+                  className="mt-3 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                >
+                  <option value="">Unassigned</option>
+                  {(projectDetails?.members || []).map((member) => (
+                    <option key={member._id} value={member._id}>{member.name} ({member.email})</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700">Priority</label>
@@ -213,6 +267,47 @@ function ProjectPage() {
             )}
           </div>
         </section>
+
+        <aside className="space-y-5">
+          <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft">
+            <p className="text-sm uppercase tracking-[0.3em] text-indigo-600">Project overview</p>
+            <h2 className="mt-3 text-2xl font-semibold text-slate-900">Admin & members</h2>
+            <p className="mt-2 text-sm text-slate-500">Add teammates to the project and manage who can work on it.</p>
+            <div className="mt-5 space-y-3 text-sm text-slate-700">
+              <p><span className="font-semibold">Admin:</span> {projectDetails?.admin?.name || "—"}</p>
+              <p><span className="font-semibold">Members:</span> {(projectDetails?.members || []).length}</p>
+            </div>
+          </div>
+
+          <div className="rounded-[32px] border border-slate-200 bg-white p-8 shadow-soft">
+            <p className="text-sm uppercase tracking-[0.3em] text-indigo-600">Manage members</p>
+            <h3 className="mt-3 text-xl font-semibold text-slate-900">Add or remove collaborators</h3>
+            <form className="mt-5 space-y-4" onSubmit={addMember}>
+              <input
+                type="email"
+                value={memberEmail}
+                onChange={(e) => setMemberEmail(e.target.value)}
+                required
+                className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                placeholder="member@example.com"
+              />
+              <button type="submit" className="w-full rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-700">Add member</button>
+            </form>
+            <div className="mt-5 space-y-3">
+              {(projectDetails?.members || []).map((member) => (
+                <div key={member._id} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">
+                  <div>
+                    <p className="font-semibold text-slate-900">{member.name}</p>
+                    <p className="text-xs text-slate-500">{member.email}</p>
+                  </div>
+                  {projectDetails?.admin?._id === currentUser.id && member._id !== projectDetails?.admin?._id && (
+                    <button type="button" onClick={() => removeMember(member._id)} className="rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-700">Remove</button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        </aside>
       </div>
     </div>
   );
